@@ -1,0 +1,322 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-a130085450c5ada364b2.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17,
+						18,
+						19,
+						20,
+						21,
+						22,
+						23,
+						24,
+						25,
+						26,
+						27,
+						28,
+						29
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "ChatE2EE",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17,
+						18,
+						19,
+						20,
+						21,
+						22,
+						23,
+						24,
+						25,
+						26,
+						27,
+						28,
+						29
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "_qt_internal_apk_dependencies::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-_qt_internal_apk_dependencies-Debug-0c24de0d88230ba9b08f.json",
+					"name" : "_qt_internal_apk_dependencies",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "aab::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-aab-Debug-4695d3fb73581c0ab023.json",
+					"name" : "aab",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "aar::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-aar-Debug-1887909955b821425c93.json",
+					"name" : "aar",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_aotstats::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_aotstats-Debug-4ecbbce9dbfb980363f6.json",
+					"name" : "all_aotstats",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_qmllint::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_qmllint-Debug-f5e8279a1cc1c4933ad2.json",
+					"name" : "all_qmllint",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_qmllint_json::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_qmllint_json-Debug-95bfa103b88b88d30ac0.json",
+					"name" : "all_qmllint_json",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_qmllint_module::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_qmllint_module-Debug-44393be67d4e3a6973fb.json",
+					"name" : "all_qmllint_module",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_qmltyperegistrations::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_qmltyperegistrations-Debug-465bead45bf14bd821ba.json",
+					"name" : "all_qmltyperegistrations",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "apk::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-apk-Debug-44b7670a1198ced01033.json",
+					"name" : "apk",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "apk_all::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-apk_all-Debug-52650a664a236f7a9276.json",
+					"name" : "apk_all",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appChatE2EE::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appChatE2EE-Debug-f787c0004fe678d6e523.json",
+					"name" : "appChatE2EE",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appChatE2EE_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appChatE2EE_autogen-Debug-a080fc799fbfe49fee04.json",
+					"name" : "appChatE2EE_autogen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appChatE2EE_autogen_timestamp_deps::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appChatE2EE_autogen_timestamp_deps-Debug-91bccd2e79cfdf29f848.json",
+					"name" : "appChatE2EE_autogen_timestamp_deps",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appChatE2EE_copy_apk_dependencies::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appChatE2EE_copy_apk_dependencies-Debug-b0a4c4725852f07deaeb.json",
+					"name" : "appChatE2EE_copy_apk_dependencies",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appChatE2EE_copy_qml::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appChatE2EE_copy_qml-Debug-f35bc5c73ccec57f98f7.json",
+					"name" : "appChatE2EE_copy_qml",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appChatE2EE_copy_res::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appChatE2EE_copy_res-Debug-90c3fadb844a4c039cc4.json",
+					"name" : "appChatE2EE_copy_res",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appChatE2EE_make_aab::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appChatE2EE_make_aab-Debug-329fd24da624f208954e.json",
+					"name" : "appChatE2EE_make_aab",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appChatE2EE_make_aar::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appChatE2EE_make_aar-Debug-15e2c0e9fdd26de64637.json",
+					"name" : "appChatE2EE_make_aar",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appChatE2EE_make_apk::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appChatE2EE_make_apk-Debug-3af613c75e70176b0cf0.json",
+					"name" : "appChatE2EE_make_apk",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appChatE2EE_other_files::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appChatE2EE_other_files-Debug-ce61ecd92fbb0e5e4168.json",
+					"name" : "appChatE2EE_other_files",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appChatE2EE_prepare_apk_dir::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appChatE2EE_prepare_apk_dir-Debug-f0231492c2fbf041553c.json",
+					"name" : "appChatE2EE_prepare_apk_dir",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appChatE2EE_qmllint::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appChatE2EE_qmllint-Debug-153ed2253b478dd39e54.json",
+					"name" : "appChatE2EE_qmllint",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appChatE2EE_qmllint_json::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appChatE2EE_qmllint_json-Debug-e5450d1da6bb89e5bd74.json",
+					"name" : "appChatE2EE_qmllint_json",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appChatE2EE_qmllint_module::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appChatE2EE_qmllint_module-Debug-bd0202a950f8517db9fc.json",
+					"name" : "appChatE2EE_qmllint_module",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appChatE2EE_qmltyperegistration::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appChatE2EE_qmltyperegistration-Debug-9c4eed62805b97cc8fe4.json",
+					"name" : "appChatE2EE_qmltyperegistration",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "clean_qml_context_properties::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-clean_qml_context_properties-Debug-7c8a82bbe8fd586f12e5.json",
+					"name" : "clean_qml_context_properties",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "dump_qml_context_properties::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dump_qml_context_properties-Debug-a0ef8c57c87cbc180b87.json",
+					"name" : "dump_qml_context_properties",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "generate_qmlls_build_ini_file::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-generate_qmlls_build_ini_file-Debug-cf4d4faaafc040bf320e.json",
+					"name" : "generate_qmlls_build_ini_file",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "module_appChatE2EE_aotstats_target::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-module_appChatE2EE_aotstats_target-Debug-e90d6cf858e65341f268.json",
+					"name" : "module_appChatE2EE_aotstats_target",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "qt_internal_plugins::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-qt_internal_plugins-Debug-6d87e51ca7246f20b952.json",
+					"name" : "qt_internal_plugins",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/Users/Sumith/Downloads/chat-e2ee-source_4/chat-e2ee/client/build/Qt_6_11_1_for_Android_arm64_v8a-Debug",
+		"source" : "C:/Users/Sumith/Downloads/chat-e2ee-source_4/chat-e2ee/client"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}

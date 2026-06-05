@@ -1,0 +1,511 @@
+"""
+End-to-end encrypted chat server.
+
+This server is deliberately "dumb" about message contents. It performs three
+jobs only:
+
+  1. It keeps a directory of public keys so that any user can look up the
+     public key of any other user (the untrusted key-server model).
+  2. It tracks who is currently online and tells everyone when that changes
+     (presence).
+  3. It relays and stores message envelopes. Every envelope contains a nonce
+     and a ciphertext blob that the server can neither read nor modify without
+     detection.
+
+For file transfers the same principle holds: the server relays a small
+file_init JSON envelope (encrypted metadata + the secretstream header), then
+forwards the binary ciphertext chunks verbatim without ever decoding them, and
+finally relays a file_end JSON terminator. The server only learns who is
+sending a file to whom and how big it is - never its contents.
+
+The important design point for the thesis: the server never has access to a
+private key and never sees a single byte of plaintext. If this machine were
+seized or its operator turned malicious, the only thing they would find in the
+database is ciphertext.
+
+Author: Sumith Shaha
+Course: Bachelor's Thesis, TAMK, 2026
+"""
+
+import argparse
+import asyncio
+import json
+import logging
+import signal
+import sqlite3
+import ssl
+import time
+from pathlib import Path
+
+from websockets.asyncio.server import serve, ServerConnection
+from websockets.exceptions import ConnectionClosed
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s  %(levelname)-7s  %(message)s",
+    datefmt="%H:%M:%S",
+)
+log = logging.getLogger("chat-server")
+
+# An encrypted chat message should never be huge; capping the ciphertext size
+# stops a single client from exhausting server memory or the database with one
+# enormous frame. 64 KiB of ciphertext comfortably covers any text message.
+MAX_CIPHERTEXT_BYTES = 64 * 1024
+
+
+class _ValidationError(Exception):
+    """Raised when an incoming frame is missing a field or has a bad value.
+
+    It is caught inside the per-frame loop and turned into a polite error reply
+    so that a single malformed frame never disconnects the client.
+    """
+
+
+def _require_str(msg: dict, field: str) -> str:
+    """Pull a required string field out of a frame, or reject the frame.
+
+    Using a helper keeps the handler readable and guarantees the same error
+    wording everywhere. The isinstance check matters because JSON lets a client
+    send a number or null where we expect text, and str(None) would otherwise
+    silently become the string 'None'.
+    """
+    value = msg.get(field)
+    if not isinstance(value, str):
+        raise _ValidationError(f"field {field!r} must be a string")
+    return value
+
+
+def _require_hex(msg: dict, field: str, expected_len: int | None = None) -> bytes:
+    """Pull a required hex-encoded byte field, decode it, and length-check it.
+
+    expected_len, when given, is the number of *bytes* the decoded value must
+    have - for example a nonce is always 12 bytes and an X25519 public key is
+    always 32. Catching a wrong length here means the crypto layer is never
+    handed something malformed.
+    """
+    raw = _require_str(msg, field)
+    try:
+        data = bytes.fromhex(raw)
+    except ValueError:
+        raise _ValidationError(f"field {field!r} is not valid hex")
+    if expected_len is not None and len(data) != expected_len:
+        raise _ValidationError(
+            f"field {field!r} must be {expected_len} bytes, got {len(data)}")
+    return data
+
+
+# --------------------------------------------------------------------------
+# Storage
+# --------------------------------------------------------------------------
+class Storage:
+    """Thin wrapper around an SQLite database.
+
+    Two tables are used. 'users' is the public-key directory; it maps a
+    nickname to the raw 32-byte X25519 public key that the client uploaded
+    when it first logged in. 'messages' is the history of ciphertext
+    envelopes. Note that no column anywhere holds plaintext.
+    """
+
+    def __init__(self, path: str) -> None:
+        # check_same_thread=False is safe here because every call happens on
+        # the single asyncio event-loop thread; we never touch the connection
+        # from a background thread.
+        self._db = sqlite3.connect(path, check_same_thread=False)
+        self._db.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                nick    TEXT PRIMARY KEY,
+                pubkey  BLOB NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS messages (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                sender      TEXT NOT NULL,
+                recipient   TEXT NOT NULL,
+                nonce       BLOB NOT NULL,
+                ciphertext  BLOB NOT NULL,
+                ts          INTEGER NOT NULL
+            );
+            """
+        )
+        self._db.commit()
+
+    def save_key(self, nick: str, pubkey: bytes) -> None:
+        self._db.execute(
+            "INSERT OR REPLACE INTO users (nick, pubkey) VALUES (?, ?)",
+            (nick, pubkey),
+        )
+        self._db.commit()
+
+    def get_key(self, nick: str) -> bytes | None:
+        row = self._db.execute(
+            "SELECT pubkey FROM users WHERE nick = ?", (nick,)
+        ).fetchone()
+        return row[0] if row else None
+
+    def all_keys(self) -> dict[str, str]:
+        rows = self._db.execute("SELECT nick, pubkey FROM users").fetchall()
+        return {nick: pubkey.hex() for nick, pubkey in rows}
+
+    def save_message(
+        self, sender: str, recipient: str, nonce: bytes, ct: bytes, ts: int
+    ) -> None:
+        self._db.execute(
+            "INSERT INTO messages (sender, recipient, nonce, ciphertext, ts) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (sender, recipient, nonce, ct, ts),
+        )
+        self._db.commit()
+
+    def history_for(self, nick: str, limit: int = 50) -> list[dict]:
+        """Return the most recent envelopes that 'nick' is party to.
+
+        The client still has to decrypt these locally; the server is simply
+        handing back the ciphertext it stored earlier.
+        """
+        rows = self._db.execute(
+            "SELECT sender, recipient, nonce, ciphertext, ts FROM messages "
+            "WHERE sender = ? OR recipient = ? "
+            "ORDER BY id DESC LIMIT ?",
+            (nick, nick, limit),
+        ).fetchall()
+        rows.reverse()  # oldest first for display
+        return [
+            {
+                "type": "msg",
+                "from": sender,
+                "to": recipient,
+                "nonce": nonce.hex(),
+                "ct": ct.hex(),
+                "ts": ts,
+            }
+            for sender, recipient, nonce, ct, ts in rows
+        ]
+
+
+# --------------------------------------------------------------------------
+# Server
+# --------------------------------------------------------------------------
+class ChatServer:
+    def __init__(self, storage: Storage) -> None:
+        self.storage = storage
+        # Maps an online nickname to its live WebSocket connection.
+        self.online: dict[str, ServerConnection] = {}
+        # Maps an in-flight file msg_id to (sender, recipient). A file_init
+        # frame creates the entry; the binary chunks that follow are routed
+        # using it; file_end removes it. This lets the server forward opaque
+        # binary chunks to the right recipient without ever inspecting or
+        # decoding their (encrypted) contents.
+        self.transfers: dict[str, tuple[str, str]] = {}
+
+    async def broadcast_presence(self) -> None:
+        """Tell every connected client the current list of online users."""
+        payload = json.dumps(
+            {"type": "presence", "users": sorted(self.online.keys())}
+        )
+        # Copy the values so a disconnect during iteration cannot corrupt
+        # the loop.
+        for ws in list(self.online.values()):
+            try:
+                await ws.send(payload)
+            except ConnectionClosed:
+                pass
+
+    async def _send_error(self, ws: ServerConnection, reason: str) -> None:
+        """Tell a client that its last frame was rejected, without dropping it.
+
+        Returning a structured error rather than letting an exception bubble up
+        is what keeps one malformed frame from tearing down the whole
+        connection. The client can log or ignore it; either way the session
+        survives.
+        """
+        try:
+            await ws.send(json.dumps({"type": "error", "reason": reason}))
+        except ConnectionClosed:
+            pass
+
+    async def handle(self, ws: ServerConnection) -> None:
+        """Per-connection coroutine. One of these runs for each client.
+
+        Every frame is treated as untrusted. A client may be buggy, may be on a
+        flaky connection that corrupts data, or may be hostile, so each frame
+        is validated field by field before anything is done with it. A frame
+        that fails validation earns a single 'error' reply and is then dropped;
+        it never raises out of the loop, because doing so would disconnect the
+        user. This defensive posture is the server-side counterpart to the
+        authenticated-encryption checks the clients perform.
+        """
+        nick: str | None = None
+        try:
+            async for raw in ws:
+                # ---- Binary frame = one encrypted file chunk ------------
+                # The websockets library hands us bytes for a binary frame and
+                # str for a text frame. A binary frame is a file chunk whose
+                # first 36 bytes are the ASCII msg_id, next 4 bytes are the
+                # big-endian chunk index, and the rest is secretstream
+                # ciphertext. We must NOT json.loads() it - it is not text and
+                # doing so is exactly what used to crash the connection with a
+                # UnicodeDecodeError. Instead we look up where this transfer is
+                # headed (recorded by the earlier file_init) and forward the
+                # frame byte-for-byte. The server never decrypts anything.
+                if isinstance(raw, (bytes, bytearray)):
+                    if nick is None:
+                        # An unidentified socket has no business sending chunks.
+                        continue
+                    if len(raw) < 40:
+                        # Too short to even carry a 36-byte id + 4-byte index.
+                        continue
+                    msg_id = bytes(raw[:36]).decode("ascii", errors="replace")
+                    route = self.transfers.get(msg_id)
+                    if route is None:
+                        log.warning(
+                            "Binary chunk for unknown transfer %s", msg_id)
+                        continue
+                    _sender, recipient = route
+
+                    # ---- TEMPORARY: thesis evidence only -----------------
+                    # Logs the first bytes the server is relaying, to prove the
+                    # server only ever sees ciphertext. Compare against the real
+                    # file's plaintext header (a JPEG starts FF D8 FF; a PDF
+                    # starts 25 50 44 46 "%PDF"). The bytes below are post-byte-
+                    # 40 secretstream ciphertext and will match neither.
+                    # REMOVE THIS BLOCK after capturing the screenshot.
+                    _cipher_preview = bytes(raw[40:64])  # first 24 ct bytes
+                    log.info("EVIDENCE relay %s chunk: server sees ct=%s",
+                             msg_id, _cipher_preview.hex())
+                    # ---- end temporary block -----------------------------
+
+                    target_ws = self.online.get(recipient)
+                    if target_ws is not None:
+                        try:
+                            await target_ws.send(raw)  # forward bytes verbatim
+                        except ConnectionClosed:
+                            pass
+                    continue
+
+                # ---- Text frame = JSON control/message ------------------
+                # Guard the entire per-frame body. Anything unexpected becomes
+                # a logged warning plus an error reply, not a dead connection.
+                try:
+                    msg = json.loads(raw)
+                except (json.JSONDecodeError, TypeError):
+                    log.warning("Ignoring non-JSON frame")
+                    await self._send_error(ws, "malformed JSON")
+                    continue
+
+                if not isinstance(msg, dict):
+                    await self._send_error(ws, "frame must be a JSON object")
+                    continue
+
+                mtype = msg.get("type")
+
+                try:
+                    # ---- 1. Login / key upload --------------------------
+                    if mtype == "hello":
+                        new_nick = _require_str(msg, "nick").strip()
+                        if not new_nick:
+                            await self._send_error(ws, "empty nickname")
+                            continue
+                        if len(new_nick) > 64:
+                            await self._send_error(ws, "nickname too long")
+                            continue
+                        pubkey = _require_hex(msg, "pubkey", expected_len=32)
+
+                        # If this nickname is already online on another
+                        # socket, drop the old one. This stops a stale ghost
+                        # session from lingering in the presence list.
+                        existing = self.online.get(new_nick)
+                        if existing is not None and existing is not ws:
+                            try:
+                                await existing.close(
+                                    code=4000, reason="logged in elsewhere")
+                            except ConnectionClosed:
+                                pass
+
+                        nick = new_nick
+                        self.storage.save_key(nick, pubkey)
+                        self.online[nick] = ws
+                        log.info("LOGIN  %s (%d online)",
+                                 nick, len(self.online))
+
+                        await ws.send(json.dumps(
+                            {"type": "keys", "keys": self.storage.all_keys()}))
+                        for env in self.storage.history_for(nick):
+                            await ws.send(json.dumps(env))
+                        await self.broadcast_presence()
+
+                    # ---- 2. Public-key lookup ---------------------------
+                    elif mtype == "getkey":
+                        target = _require_str(msg, "nick")
+                        key = self.storage.get_key(target)
+                        await ws.send(json.dumps({
+                            "type": "key",
+                            "nick": target,
+                            "pubkey": key.hex() if key else None,
+                        }))
+
+                    # ---- 3. Encrypted message relay ---------------------
+                    elif mtype == "msg":
+                        # A message may only be sent once the sender has
+                        # identified itself with a hello. This stops anonymous
+                        # sockets from injecting traffic.
+                        if nick is None:
+                            await self._send_error(ws, "must log in first")
+                            continue
+
+                        sender = _require_str(msg, "from")
+                        recipient = _require_str(msg, "to")
+                        # The 'from' field is advisory; the authoritative
+                        # identity is the nick this socket logged in with. We
+                        # overwrite it so a client cannot spoof another sender.
+                        if sender != nick:
+                            log.warning("Sender %r overridden to %r",
+                                        sender, nick)
+                            sender = nick
+                            msg["from"] = nick
+                            raw = json.dumps(msg)
+
+                        nonce = _require_hex(msg, "nonce", expected_len=12)
+                        ct = _require_hex(msg, "ct")
+                        if len(ct) > MAX_CIPHERTEXT_BYTES:
+                            await self._send_error(ws, "message too large")
+                            continue
+                        ts = int(msg.get("ts") or time.time() * 1000)
+
+                        self.storage.save_message(
+                            sender, recipient, nonce, ct, ts)
+                        log.info(
+                            "RELAY  %s -> %s  ciphertext=%s...(%d bytes)",
+                            sender, recipient, ct.hex()[:24], len(ct))
+
+                        target_ws = self.online.get(recipient)
+                        if target_ws is not None:
+                            await target_ws.send(raw)
+                        # If the recipient is offline the ciphertext still sits
+                        # in the database and will be replayed at their next
+                        # login, so nothing is lost.
+
+                    # ---- 4. File transfer: init -------------------------
+                    # Announces an incoming file. We record the route so the
+                    # binary chunks that follow can be forwarded, overwrite the
+                    # advisory 'from' with the authenticated nick (same anti-
+                    # spoofing rule as for msg), and relay the envelope to the
+                    # recipient. The envelope carries only encrypted metadata
+                    # and the secretstream header - no plaintext.
+                    elif mtype == "file_init":
+                        if nick is None:
+                            await self._send_error(ws, "must log in first")
+                            continue
+                        msg_id = _require_str(msg, "msg_id")
+                        recipient = _require_str(msg, "to")
+                        msg["from"] = nick
+                        raw = json.dumps(msg)
+                        self.transfers[msg_id] = (nick, recipient)
+                        log.info(
+                            "FILE   %s -> %s  init %s (%s, %s bytes)",
+                            nick, recipient, msg_id,
+                            msg.get("filename"), msg.get("size"))
+                        target_ws = self.online.get(recipient)
+                        if target_ws is not None:
+                            await target_ws.send(raw)
+                        # Note: unlike text messages, in-flight file chunks are
+                        # NOT stored for offline replay in this version. If the
+                        # recipient is offline the transfer is simply dropped.
+                        # Offline file replay is documented as future work.
+
+                    # ---- 5. File transfer: end --------------------------
+                    # The sender finished. Relay the terminator to the
+                    # recipient (their TAG_FINAL chunk normally closes the file
+                    # already; this is the matching signal) and forget the
+                    # route so the transfers map does not grow without bound.
+                    elif mtype == "file_end":
+                        if nick is None:
+                            await self._send_error(ws, "must log in first")
+                            continue
+                        msg_id = _require_str(msg, "msg_id")
+                        route = self.transfers.get(msg_id)
+                        if route is not None:
+                            _sender, recipient = route
+                            target_ws = self.online.get(recipient)
+                            if target_ws is not None:
+                                try:
+                                    await target_ws.send(json.dumps(msg))
+                                except ConnectionClosed:
+                                    pass
+                            del self.transfers[msg_id]
+                        log.info("FILE   end %s", msg_id)
+
+                    else:
+                        log.warning("Unknown message type: %r", mtype)
+                        await self._send_error(
+                            ws, f"unknown message type: {mtype!r}")
+
+                except _ValidationError as e:
+                    # One bad field: reject this frame, keep the connection.
+                    log.warning("Rejected %s frame: %s", mtype, e)
+                    await self._send_error(ws, str(e))
+
+        except ConnectionClosed:
+            pass
+        finally:
+            if nick and self.online.get(nick) is ws:
+                del self.online[nick]
+                log.info("LOGOUT %s (%d online)", nick, len(self.online))
+                await self.broadcast_presence()
+                # Drop any half-finished transfers this user was sending, so
+                # the transfers map does not leak entries for a vanished peer.
+                stale = [mid for mid, (s, _r) in self.transfers.items()
+                         if s == nick]
+                for mid in stale:
+                    del self.transfers[mid]
+
+
+# --------------------------------------------------------------------------
+# Entry point
+# --------------------------------------------------------------------------
+def make_ssl_context(certfile: str, keyfile: str) -> ssl.SSLContext:
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    ctx.load_cert_chain(certfile, keyfile)
+    return ctx
+
+
+async def amain(args: argparse.Namespace) -> None:
+    storage = Storage(args.db)
+    server = ChatServer(storage)
+
+    ssl_ctx = None
+    if args.cert and args.key:
+        ssl_ctx = make_ssl_context(args.cert, args.key)
+        scheme = "wss"
+    else:
+        scheme = "ws"
+        log.warning("Running WITHOUT TLS - development only!")
+
+    # Allow Ctrl-C to stop the loop cleanly.
+    loop = asyncio.get_running_loop()
+    stop = loop.create_future()
+    try:
+        loop.add_signal_handler(signal.SIGINT, stop.set_result, None)
+        loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
+    except NotImplementedError:
+        pass  # Windows does not support add_signal_handler for these.
+
+    async with serve(server.handle, args.host, args.port, ssl=ssl_ctx):
+        log.info("Listening on %s://%s:%d", scheme, args.host, args.port)
+        await stop
+    log.info("Server stopped.")
+
+
+def main() -> None:
+    p = argparse.ArgumentParser(description="E2EE chat server")
+    p.add_argument("--host", default="0.0.0.0")
+    p.add_argument("--port", type=int, default=8765)
+    p.add_argument("--db", default="chat.db")
+    p.add_argument("--cert", help="Path to TLS certificate (fullchain.pem)")
+    p.add_argument("--key", help="Path to TLS private key (privkey.pem)")
+    args = p.parse_args()
+    asyncio.run(amain(args))
+
+
+if __name__ == "__main__":
+    main()

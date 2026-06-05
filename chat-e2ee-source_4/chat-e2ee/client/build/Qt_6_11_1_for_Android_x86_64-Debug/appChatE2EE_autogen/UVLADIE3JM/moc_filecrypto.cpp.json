@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "FileCrypto",
+            "lineNumber": 30,
+            "object": true,
+            "qualifiedClassName": "FileCrypto",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                }
+            ]
+        }
+    ],
+    "inputFile": "filecrypto.h",
+    "outputRevision": 69
+}

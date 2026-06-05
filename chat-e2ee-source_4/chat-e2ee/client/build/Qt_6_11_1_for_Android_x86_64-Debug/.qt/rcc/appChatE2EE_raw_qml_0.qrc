@@ -1,0 +1,10 @@
+<RCC>
+  <qresource prefix="/qt/qml/ChatE2EE/">
+    <file alias="qml/Main.qml">C:/Users/Sumith/Downloads/chat-e2ee-source_4/chat-e2ee/client/qml/Main.qml</file>
+    <file alias="qml/LoginPage.qml">C:/Users/Sumith/Downloads/chat-e2ee-source_4/chat-e2ee/client/qml/LoginPage.qml</file>
+    <file alias="qml/ChatPage.qml">C:/Users/Sumith/Downloads/chat-e2ee-source_4/chat-e2ee/client/qml/ChatPage.qml</file>
+    <file alias="qml/MessageDelegate.qml">C:/Users/Sumith/Downloads/chat-e2ee-source_4/chat-e2ee/client/qml/MessageDelegate.qml</file>
+    <file alias="qml/UserListPanel.qml">C:/Users/Sumith/Downloads/chat-e2ee-source_4/chat-e2ee/client/qml/UserListPanel.qml</file>
+  </qresource>
+</RCC>
+

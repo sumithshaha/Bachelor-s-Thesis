@@ -1,0 +1,3 @@
+[C:<SLASH>Users<SLASH>Sumith<SLASH>Downloads<SLASH>chat-e2ee-source_4<SLASH>chat-e2ee<SLASH>client]
+importPaths="C:/Users/Sumith/Downloads/chat-e2ee-source_4/chat-e2ee/client/build/Qt_6_11_1_for_Android_arm64_v8a-Debug;C:/Users/Sumith/Downloads/chat-e2ee-source_4/chat-e2ee/client/build/Qt_6_11_1_for_Android_arm64_v8a-Debug/ChatE2EE;C:/Qt/6.11.1/android_arm64_v8a/qml"
+resourceFiles="C:/Users/Sumith/Downloads/chat-e2ee-source_4/chat-e2ee/client/build/Qt_6_11_1_for_Android_arm64_v8a-Debug/.qt/rcc/qmake_ChatE2EE.qrc;C:/Users/Sumith/Downloads/chat-e2ee-source_4/chat-e2ee/client/build/Qt_6_11_1_for_Android_arm64_v8a-Debug/.qt/rcc/appChatE2EE_raw_qml_0.qrc"
