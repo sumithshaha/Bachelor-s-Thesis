@@ -1,6 +1,0 @@
-<RCC>
-  <qresource prefix="/qt/qml/ChatE2EE">
-    <file alias="qmldir">C:/Users/Sumith/Downloads/chat-e2ee-source_4/chat-e2ee/client/build/Qt_6_11_1_for_Android_arm64_v8a-Debug/ChatE2EE/qmldir</file>
-  </qresource>
-</RCC>
-

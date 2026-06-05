@@ -1,3 +1,0 @@
-C:\Qt\Tools\CMake_64\bin\cmake.exe -E rm -f CMakeFiles\appChatE2EE.dir/objects.a
-C:\Qt\Tools\mingw1310_64\bin\ar.exe qc CMakeFiles\appChatE2EE.dir/objects.a @CMakeFiles\appChatE2EE.dir\objects1.rsp
-C:\Qt\Tools\mingw1310_64\bin\g++.exe -g -Wl,--whole-archive CMakeFiles\appChatE2EE.dir/objects.a -Wl,--no-whole-archive -o appChatE2EE.exe -Wl,--out-implib,libappChatE2EE.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\appChatE2EE.dir\linkLibs.rsp
