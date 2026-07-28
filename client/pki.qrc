@@ -1,0 +1,26 @@
+<!--
+  pki.qrc
+
+  Compiles the lab certificate authority's ROOT certificate into the
+  application binary as :/pki/demo-ca.crt.
+
+  Only the PUBLIC root certificate belongs here. The root PRIVATE key
+  (pki/ca.key) must never be added to this file, to the repository, or to any
+  archive: it is the key that can mint certificates this application trusts.
+
+  The root is embedded rather than read from a file beside the executable so
+  that it cannot be replaced by dropping a different file into the application
+  directory. Re-issuing the relay's leaf certificate does NOT require touching
+  this file or rebuilding; only replacing the root itself does.
+
+  NOTE ON THIS COMMENT: XML forbids a doubled hyphen inside a comment, and rcc
+  parses .qrc files with a strict XML reader. A doubled hyphen used as a prose
+  dash here is not a style problem, it is a hard parse error that surfaces as
+  "The rcc list process failed for ... pki.qrc" during CMake configuration.
+  Keep the wording free of doubled hyphens.
+-->
+<RCC>
+    <qresource prefix="/pki">
+        <file alias="demo-ca.crt">pki/demo-ca.crt</file>
+    </qresource>
+</RCC>

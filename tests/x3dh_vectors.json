@@ -1,0 +1,63 @@
+{
+  "description": "X3DH conformance vectors for the ChatE2EE C++ port. A port is correct when it reproduces every `sk` byte for byte from the given private keys.",
+  "constants": {
+    "F": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "kdf_salt": "0000000000000000000000000000000000000000000000000000000000000000",
+    "kdf_info": "tamk-chat-x3dh-v1",
+    "kdf": "HKDF-SHA256, length 32, over F || DH1 || DH2 || DH3 [|| DH4]",
+    "dh_order": [
+      "DH(IK_A, SPK_B)",
+      "DH(EK_A, IK_B)",
+      "DH(EK_A, SPK_B)",
+      "DH(EK_A, OPK_B) if OPK offered"
+    ]
+  },
+  "identity_seeds": {
+    "ik_a": "a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+    "ik_b": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0"
+  },
+  "derived_x25519_priv": {
+    "ik_a": "a8236e09349e57f5834da359ba862f4396057ae9497dc024bd1e726127b5424a",
+    "ik_b": "40cd448997eecce8f96502dc99d8a71536880032cc74f906ba6919ef0747cc4c"
+  },
+  "derived_x25519_pub": {
+    "ik_a": "30dd3d5bd17f04b7d32f524055fc49611f5027c6d4788bcc96110125ad608474",
+    "ik_b": "e76c9deb04699062f797dba170461f423ab308ba33dafcb6bec1e3a6bc7b720b"
+  },
+  "private_keys": {
+    "spk_b": "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+    "opk_b": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0",
+    "ek_a": "e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0"
+  },
+  "public_keys": {
+    "ik_a": "b533d8ad9fcfbdde0b481c1b334ddc3c53412fd614564e7e5afd020368d382c3",
+    "ik_b": "705fbac01f5519899f437bc42e40255ae9ab54bff00de3433af7d687d9e71ad5",
+    "spk_b": "1c78fc71ef01855f670c555c82226397f0e73b0aaf443a491d4110dc22f28236",
+    "opk_b": "b25dc5485163369e179437bb72fe4bd4a142482682c302d66a3a2d4865c3fd0b",
+    "ek_a": "ff5d87907f1394b3a131985b894f513de72778ce27b8c10b32f93982a87cda47"
+  },
+  "cases": [
+    {
+      "name": "with_one_time_prekey",
+      "opk": true,
+      "sk": "c44a44d864953ad7b8ee1454ed0e85cfea567d201f8e910e0fbbbcb3f85d8ec7"
+    },
+    {
+      "name": "without_one_time_prekey",
+      "opk": false,
+      "sk": "1e1ffefc9ab47ff0ddcee3e95564032ec1bdb9352c735d1a2eebab02c147986b"
+    }
+  ],
+  "associated_data": {
+    "definition": "Encode(IK_A) || Encode(IK_B), raw 32-byte publics",
+    "value": "b533d8ad9fcfbdde0b481c1b334ddc3c53412fd614564e7e5afd020368d382c3705fbac01f5519899f437bc42e40255ae9ab54bff00de3433af7d687d9e71ad5"
+  },
+  "signature": {
+    "scheme": "RFC 8032 Ed25519, detached. Byte-identical to libsodium crypto_sign_detached and to cryptography's Ed25519PrivateKey.sign for the same seed and message. Ed25519 signing IS deterministic, so unlike the previous XEdDSA scheme this signature is a reproducible OUTPUT, not merely something to verify.",
+    "signer_seed": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
+    "signer_public_key": "705fbac01f5519899f437bc42e40255ae9ab54bff00de3433af7d687d9e71ad5",
+    "message": "1c78fc71ef01855f670c555c82226397f0e73b0aaf443a491d4110dc22f28236",
+    "valid_signature": "d04a8b07b06965e5b1b3b1396fbe17fbddb44b21e7630cbb158fba89078ef76b9d43f275e4a4312a8b19420ec3616e43321af1448166236e8b4db89750841508",
+    "corrupted_signature_must_reject": "d14a8b07b06965e5b1b3b1396fbe17fbddb44b21e7630cbb158fba89078ef76b9d43f275e4a4312a8b19420ec3616e43321af1448166236e8b4db89750841508"
+  }
+}

@@ -1,0 +1,35 @@
+# Exact versions for reproducing a recorded test run byte for byte.
+#
+#   python -m pip install -r requirements-lock.txt
+#
+# These are the versions present for the run that produced "267 passed" on
+# Windows 11 with Git Bash. Use this file when the point is to REPRODUCE a
+# result -- a thesis appendix, or investigating whether a later failure came
+# from the code or from a dependency. Use requirements.txt for ordinary work.
+#
+# Recorded: 24 July 2026, Python 3.15.0b4, win32.
+#
+# NOTE ON THE INTERPRETER: 3.15.0b4 is a BETA. It is not covered by this lock
+# file, because pip cannot pin the interpreter running it. See the comment at
+# the end.
+
+# ---- Direct dependencies -------------------------------------------------
+cryptography==49.0.0
+pynacl==1.6.2
+pytest==9.1.1
+pytest-asyncio==1.4.0
+websockets==16.1.1
+
+# ---- Transitive, pinned so the resolution is fully determined -------------
+cffi==2.1.0
+colorama==0.4.6
+iniconfig==2.3.0
+packaging==26.2
+pluggy==1.6.0
+pycparser==3.0
+pygments==2.20.0
+
+# ---- The interpreter -----------------------------------------------------
+# A lock file fixes the packages and nothing else. If the recorded run used a
+# pre-release interpreter, that is a variable no amount of pinning removes, and
+# it should be stated wherever the result is reported rather than left implicit.

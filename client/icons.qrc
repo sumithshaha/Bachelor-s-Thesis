@@ -1,0 +1,18 @@
+<!DOCTYPE RCC>
+<!--
+  App icon resource, compiled the classic way by AUTORCC (see CMakeLists.txt).
+  This is deliberately a plain .qrc rather than qt_add_resources(<target> ...):
+  the target-based qt_add_resources hooks the same "expose files to the IDE"
+  finalizer that qt_add_qml_module uses, and combining the two made CMake
+  configuration fail. A .qrc processed by AUTORCC does not touch that finalizer,
+  so it configures cleanly alongside the QML module.
+
+  The prefix "/" makes the image available to C++ as :/icons/chate2ee-256.png,
+  which is what main.cpp (window icon) and desktopnotifier.cpp (tray icon and
+  each desktop notification) load.
+-->
+<RCC version="1.0">
+  <qresource prefix="/">
+    <file>icons/chate2ee-256.png</file>
+  </qresource>
+</RCC>

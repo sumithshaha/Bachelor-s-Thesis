@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<!-- Android manifest for the encrypted chat client.
+
+     The only thing this app needs from the device is internet access, in
+     order to reach the chat server. It asks for no contacts, no storage, no
+     camera, no location. Keeping the permission list this short is itself a
+     small privacy feature and is worth pointing out in the thesis: an app
+     that cannot read your contacts cannot leak them.
+
+     Most of the values below (package name, version, the Qt library glue) are
+     filled in automatically by androiddeployqt when the project is built; this
+     file customises the parts that matter for the application. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="fi.tamk.chate2ee"
+    android:versionName="1.0"
+    android:versionCode="1">
+
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Biometric (fingerprint) / device-credential unlock for the app lock
+         (feature 2). USE_BIOMETRIC is the modern permission (API 28+); the
+         app's own PIN works even without it, so this only enables the
+         fingerprint convenience path. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+    <!-- Post notifications on Android 13+ (runtime-requested in ChatE2EEActivity).
+         Without this, notifications are silently dropped on new devices. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Vibrate for incoming-message notifications. -->
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <!-- Run a foreground service so the process (socket + ratchet) stays alive
+         in the background, letting incoming messages be decrypted and shown. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <!-- Android 14 (API 34) requires declaring the foreground-service TYPE.
+         dataSync fits a background sync/connection that is not one of the
+         special-cased types (location, media, call, etc.). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+
+    <application
+        android:name="org.qtproject.qt.android.bindings.QtApplication"
+        android:label="Encrypted Chat"
+        android:allowBackup="false">
+
+        <!-- Our QtActivity subclass (fi.tamk.chate2ee.ChatE2EEActivity). It runs
+             the same Qt app as a plain QtActivity but also creates the
+             notification channels, requests POST_NOTIFICATIONS, and handles the
+             chate2ee://open?peer=X deep links from notifications and shortcuts.
+             The lib_name meta-data still points at the native library. -->
+        <activity
+            android:name="fi.tamk.chate2ee.ChatE2EEActivity"
+            android:label="Encrypted Chat"
+            android:launchMode="singleTop"
+            android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation|mcc|mnc|density"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+
+            <!-- Deep link used by home-screen shortcuts and by tapping a
+                 message notification: chate2ee://open?peer=<peer>. BROWSABLE +
+                 DEFAULT so the system delivers it to this activity. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="chate2ee" android:host="open"/>
+            </intent-filter>
+
+            <meta-data
+                android:name="android.app.lib_name"
+                android:value="appChatE2EE"/>
+        </activity>
+
+        <!-- Foreground service that keeps the process (and thus the socket and
+             ratchet) alive in the background. It carries no crypto of its own;
+             it exists only so the real ChatClient can keep receiving and
+             decrypting. foregroundServiceType must match the permission on
+             API 34+. Not exported: only this app starts it. -->
+        <service
+            android:name="fi.tamk.chate2ee.ChatService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"/>
+    </application>
+</manifest>

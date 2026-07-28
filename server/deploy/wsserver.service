@@ -1,0 +1,86 @@
+# ChatE2EE relay -- systemd unit for the cPouta VM.
+#
+# Install:
+#   sudo install -m 0644 wsserver.service /etc/systemd/system/wsserver.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now wsserver
+#
+# WHY THE CERTIFICATE ARRIVES THROUGH THE ENVIRONMENT AND NOT --cert/--key
+# -----------------------------------------------------------------------
+# resolve_tls_paths() in server.py checks, in order: --cert/--key, then
+# --demo-tls, then CHATE2EE_TLS_CERT / CHATE2EE_TLS_KEY, then nothing. The
+# third rule exists precisely so a service manager can supply the paths
+# without anyone editing a command line. Using it means the TLS configuration
+# is one `systemctl edit wsserver` away and lives in exactly one place, rather
+# than being duplicated between this file and whatever is in someone's shell
+# history.
+#
+# WHY THE PATHS POINT AT /opt/wsserver/tls AND NOT AT /etc/letsencrypt
+# -------------------------------------------------------------------
+# /etc/letsencrypt/live and /etc/letsencrypt/archive are mode 0700 root:root,
+# so an unprivileged service cannot read privkey.pem from there. The deploy
+# hook (chate2ee-cert-deploy.sh) copies both files here with ownership this
+# service can read, and restarts this unit afterwards. That restart is not a
+# convenience: server.py calls load_cert_chain() once at startup and holds the
+# resulting SSLContext for the life of the process, so without it a renewed
+# certificate would never reach the running relay.
+
+[Unit]
+Description=ChatE2EE end-to-end encrypted chat relay
+Documentation=file:/opt/wsserver/DEPLOY_CPOUTA.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=wsserver
+Group=wsserver
+WorkingDirectory=/opt/wsserver
+
+Environment=CHATE2EE_TLS_CERT=/opt/wsserver/tls/fullchain.pem
+Environment=CHATE2EE_TLS_KEY=/opt/wsserver/tls/privkey.pem
+Environment=PYTHONUNBUFFERED=1
+
+ExecStart=/opt/wsserver/.venv/bin/python /opt/wsserver/server.py \
+          --host 0.0.0.0 \
+          --port 8765 \
+          --db /opt/wsserver/chat.db
+
+# server.py installs handlers for SIGINT and SIGTERM and unwinds through
+# amain()'s `finally`, which cancels the log-broadcast task before the serve()
+# context closes. SIGTERM is therefore a clean shutdown, and 20 seconds is far
+# more than that unwind needs.
+KillSignal=SIGTERM
+TimeoutStopSec=20
+
+Restart=on-failure
+RestartSec=5s
+
+# ---- Hardening ----------------------------------------------------------
+# The relay reads two certificate files and writes one SQLite database. It has
+# no reason to touch anything else, and a compromised relay is exactly the
+# threat model the whole project is written against -- so the deployment
+# should not hand it more of the machine than it needs.
+#
+# ReadWritePaths must cover the WHOLE directory, not just chat.db: SQLite runs
+# in WAL mode here (PRAGMA journal_mode=WAL), so it creates and removes
+# chat.db-wal and chat.db-shm alongside it. Naming only the database file
+# gives you a relay that starts and then cannot write.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/wsserver
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=multi-user.target

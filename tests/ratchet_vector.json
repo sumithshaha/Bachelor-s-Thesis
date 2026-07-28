@@ -1,0 +1,57 @@
+{
+  "version": "ratchet-interop-v1",
+  "cipher": "xc20p1305-r1",
+  "info_sk": "tamk-chat-e2ee-v1",
+  "info_root": "tamk-chat-ratchet-root-v1",
+  "direction": "alice->bob",
+  "alice_identity_pub": "4c66f7dbe63bd33b620869191b7f7dee79110ee71075527545c3365e504e4942",
+  "bob_identity_priv": "8841d89519efac4fbfe307e62e641795640f65034591bdaecd44d317d4113e7f",
+  "bob_identity_pub": "4d2fbeff6adf6941394a4bd7f40c2c29d83007c9a58b3bdde2790c4ff8c0466c",
+  "transcript": [
+    {
+      "cipher": "xc20p1305-r1",
+      "dh": "8714b3b776354b08143d40300657d7a24169f3ee6f68d1a3e0c0ad2b4a8fb17d",
+      "pn": 0,
+      "n": 0,
+      "nonce": "0cfcc01f1a07c8b2b6a496d31ced0a5562f23fb8c85f9797",
+      "ct": "2d4ad2532880be4544ae3cabeabed416bb2e56d50b39175659ec728e471ead2c7b50837bdf69328da6da4b7bbd",
+      "expect_pt": "Cross-language interop works!"
+    },
+    {
+      "cipher": "xc20p1305-r1",
+      "dh": "8714b3b776354b08143d40300657d7a24169f3ee6f68d1a3e0c0ad2b4a8fb17d",
+      "pn": 0,
+      "n": 1,
+      "nonce": "92d7d9d54fd2ac5fa4ddd1b1b8754eb81e65c7ade348704c",
+      "ct": "3608c9ab50d7d0aa81e546f9a3d38eadaeb0f12593c206611ea584f362f74a1bb9560cfaee84d52a22041641b3d775402f930c",
+      "expect_pt": "Second message, same sending chain."
+    },
+    {
+      "cipher": "xc20p1305-r1",
+      "dh": "8714b3b776354b08143d40300657d7a24169f3ee6f68d1a3e0c0ad2b4a8fb17d",
+      "pn": 0,
+      "n": 2,
+      "nonce": "50f354e6c6026963627df4c81c7158d5c2374cef28877e5f",
+      "ct": "e73e43b4cacda942d1750995b3504b3f3a70cd391f59ee9c0d1ecf05ad8b861fa3640b3f7e1266ad05f73eac3d4127d5e62281f1019d5bc9379395a4fde21a",
+      "expect_pt": "Third -- the symmetric ratchet keeps advancing."
+    },
+    {
+      "cipher": "xc20p1305-r1",
+      "dh": "8714b3b776354b08143d40300657d7a24169f3ee6f68d1a3e0c0ad2b4a8fb17d",
+      "pn": 0,
+      "n": 3,
+      "nonce": "b3412a496a2b03009fd5fe5dd8678daf502c6fa55dd1b520",
+      "ct": "a68421a450e62acc58a41057f2ef98fc15d9dd20f7513178527a86eb009f4c738518d19349e82a7a94640ddd37",
+      "expect_pt": "Fourth, still forward-secret."
+    },
+    {
+      "cipher": "xc20p1305-r1",
+      "dh": "8714b3b776354b08143d40300657d7a24169f3ee6f68d1a3e0c0ad2b4a8fb17d",
+      "pn": 0,
+      "n": 4,
+      "nonce": "ac57cc95815aebca035b75a30a0134322f5c44bc2b8e15d1",
+      "ct": "5853361f3242ccf26aea18be50b022dc9c289551a7451606612e45f9fa408a",
+      "expect_pt": "Fifth and last."
+    }
+  ]
+}

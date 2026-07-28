@@ -1,0 +1,158 @@
+# ==========================================================================
+# ChatE2EE -- files that must never be committed or put in an archive
+# ==========================================================================
+#
+# THE NAME OF THIS FILE IS LOAD-BEARING.
+#
+# IT ALSO DISAPPEARS FROM ZIP ARCHIVES. Windows Explorer's "Send to >
+# Compressed (zipped) folder" omits hidden files, and a dotfile is hidden on
+# Windows. An archive round-trip through Explorer therefore deletes this file
+# silently -- it has already happened once to this project, and the resulting
+# tree looks completely normal while every rule below is absent. If you are
+# rebuilding the repository from a zip, check for this file FIRST:
+#
+#     ls -a | grep gitignore
+#
+# tests/test_repo_hygiene.py fails loudly if it is missing, which is the
+# cheapest available alarm.
+#
+# This content previously lived in a file called `gitignore`, with no leading
+# dot. Git only reads `.gitignore`, so none of the rules below had any effect
+# at all -- which is why pki/ (including ca.key), server/server.key,
+# server/.venv/ (15 MB), *.db, __pycache__/, build-interop/ and interop.exe
+# were still present in a 28 MB upload. Every rule needed was already written
+# here. The file was simply never being read.
+#
+# There is no warning for this. Git does not report an unused ignore file, so
+# the failure is completely silent and looks exactly like a working setup.
+# Confirm it is live before trusting it:
+#
+#     git check-ignore -v pki/ca.key server/server.key
+#
+# Two lines of output naming this file means the rules are active. No output
+# means they are not, and the keys are one `git add .` from being committed.
+#
+# The first section is the one that actually matters. Everything below it is
+# ordinary build noise.
+
+
+# ---- PRIVATE KEYS --------------------------------------------------------
+#
+# pki/ holds the lab certificate authority produced by tools/make_demo_pki.py.
+# pki/ca.key is the key that can mint certificates this application will
+# TRUST: anyone holding it can impersonate the relay to any build of the
+# client that embeds the matching root. It is far more sensitive than the
+# relay's own key, because re-issuing a leaf is routine whereas replacing the
+# root means rebuilding and redistributing the client.
+#
+# The whole directory is excluded rather than just the .key files, because an
+# accidental `git add pki/` is exactly the mistake this is here to prevent.
+# The PUBLIC root is committed deliberately and separately, as
+# client/pki/demo-ca.crt, which is the only piece the client needs.
+pki/
+
+# The relay's TLS private key. This has repeatedly ended up inside uploaded
+# archives; if that has happened, rotate the key and reissue the certificate
+# rather than assuming it went unnoticed.
+#
+# server/server.crt and server/server.key are an ORPHANED self-signed
+# CN=localhost pair from 31 May. Nothing in the code references them: the
+# client no longer forgives self-signed certificates (ignoreSslErrors was
+# removed in favour of the lab CA), so that pair cannot be used for anything
+# any more. Delete both from the working tree rather than relying on this
+# rule -- an ignored file is still a file on your disk.
+server/server.key
+server/server.crt
+*.key
+*.pem
+
+# Identity files: a user's long-term X25519/Ed25519 private identity.
+*.ekey
+
+
+# ---- Local data ----------------------------------------------------------
+#
+# SQLite databases hold message history and the relay's account table. They
+# contain no plaintext message content (that is the point of the design), but
+# they do contain account names, public keys and timing metadata.
+#
+# NOTE: SQLite runs in WAL mode here, so a database is only complete together
+# with its -wal and -shm sidecars. If you ever deliberately share a database
+# for debugging, checkpoint it first:  PRAGMA wal_checkpoint(TRUNCATE);
+*.db
+*.db-wal
+*.db-shm
+
+
+# ---- Build output --------------------------------------------------------
+build/
+build-*/
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.a
+*.apk
+*.aab
+
+# ---- REQUIRED BUILD INPUTS that the rules above would wrongly exclude ------
+#
+# libsodium cross-compiled for the Android ABIs. `*.a` above is a build-output
+# rule, but these particular archives are build INPUT: nothing in this
+# repository can regenerate them, because they come from an NDK cross-compile
+# performed elsewhere. Excluded, a clean clone builds an Android package whose
+# crypto is stubbed out -- CMake prints a WARNING nobody reads, the client
+# registers a 32-byte-expected public key that is 0 bytes long, and the relay
+# refuses the connection. The failure surfaces at login and looks nothing like
+# a missing file.
+#
+# A negation must name the files, not just the directory: git does not descend
+# into an excluded directory, so re-including a path inside one has no effect.
+# These lines therefore re-include the archives and the headers explicitly.
+#
+# libsodium is ISC-licensed, so shipping the compiled archive is permitted.
+!client/third_party/libsodium/**/*.a
+!client/third_party/libsodium/include/**
+
+# Qt / CMake generated
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+.qtcreator/
+*.user
+*.user.*
+
+
+# ---- Python --------------------------------------------------------------
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+
+# ---- Qt Creator per-machine state ----------------------------------------
+#
+# .qtcreator/ holds absolute paths and kit identifiers from ONE machine. It is
+# actively harmful to share: a classmate opening the project inherits build
+# directories that do not exist and kit ids that mean nothing on their system,
+# and Qt Creator then reports a configuration error rather than simply asking
+# them to choose a kit.
+client/.qtcreator/
+
+
+# ---- Editor / OS ---------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*~

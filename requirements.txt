@@ -1,0 +1,45 @@
+# Python dependencies for the ChatE2EE test suite and relay server.
+#
+#   python -m pip install -r requirements.txt
+#
+# Everything here is pure-pip and cross-platform (Windows/Git Bash, Linux,
+# macOS). No build tools are required: these wheels ship compiled.
+#
+# WHY THERE ARE VERSION BOUNDS NOW
+# --------------------------------
+# This file used to name packages with no versions at all, so every install
+# resolved to whatever was newest that day. Across two runs a week apart the
+# suite silently moved from cryptography 48 to 49, pytest 9.0.3 to 9.1.1 and
+# websockets 16.0 to 16.1.1. Nothing broke, but nothing guaranteed it would not:
+# "the tests passed" is only a claim about software you can identify.
+#
+# For a thesis that matters twice over. An examiner reproducing the results in a
+# year gets whatever pip offers then, and a failure at that point is impossible
+# to attribute -- was it the code, or a dependency that changed under it?
+#
+# The bounds below are deliberately loose: a LOWER bound where the project
+# genuinely needs a feature, and an UPPER bound only at the next major version,
+# where a maintainer is permitted to break things. For an exact, byte-identical
+# reproduction of a recorded run, use requirements-lock.txt instead.
+
+# X25519 / Ed25519, AES-256-GCM, HKDF, X.509  (crypto_core, file_crypto, x3dh,
+# tools/make_demo_pki.py). The floor is 42: earlier releases lack the
+# timezone-aware not_valid_before_utc / not_valid_after_utc properties that
+# tests/test_real_tls.py uses to check certificate validity windows.
+cryptography>=42,<50
+
+# libsodium bindings: XChaCha20-Poly1305, secretstream, Argon2id
+# (crypto_core, file_crypto, server).
+pynacl>=1.5,<2
+
+# Test runner. pytest-asyncio tracks pytest's plugin API closely, so the two
+# bounds below are chosen together.
+pytest>=8,<10
+
+# Async test support. The suite relies on asyncio_mode=auto (see pytest.ini),
+# which needs 0.21 or newer.
+pytest-asyncio>=0.24,<2
+
+# WebSocket relay and the live tests. The floor is 13: the project imports
+# websockets.asyncio.server, which older releases do not provide.
+websockets>=13,<17
